@@ -4,7 +4,7 @@ addpath('td'); % useful for interpolation
 
 
 % user specifications
-model_m.apikey ='1729e2c2e3908c169a742b6e953a69e7';% your FRED API goes here
+model_m.apikey ='';% your FRED API goes here
 model_q.apikey = model_m.apikey;
 
 
