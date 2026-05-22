@@ -150,8 +150,7 @@ if S_prop==0
 disp('Initial values are not valid')
 return;
 end
-Bdraw   = init.Bdraw;
-Sigmadraw   = init.Sigmadraw;
+
 % convert to (\theta,sig^2)
 [ttheta,ssigma2] = BSigmaTOtthetassigma2(init.Bdraw,init.Sigmadraw);
 Qdraw = init.Qdraw;
@@ -160,19 +159,7 @@ Qdraw = init.Qdraw;
 % error_B = max(max(abs(Bdraw_check-init.Bdraw)));
 % error_Sigmadraw = max(max(abs(Sigmadraw_check-init.Sigmadraw)));
 
-
-z_old_X   = init.z_old_X;
-
-R_base = chol(diag(ssigma2)\eye(setup.nvar), 'lower');
-R_old = [R_base, zeros(setup.nvar, T - setup.nvar)];
-z_old_R=cell([setup.nvar,1]);
-for i=1:setup.nvar
-    z_old_R{i} = zeros(1,2*posterior_redu.nnu{i})';
-    z_old_R{i}(1,1) = R_old(i,i);
-end
-
-z_old_B =init.z_old_B;
-
+keyboard
 
 
 tstart = tic;
@@ -183,22 +170,22 @@ while record<=setup.M0
     %% Draw Q
     
     slice.scale_z    = 1;
-    slice.mean       = zeros(setup.nvar*setup.nvar,1);
-    slice.chol_cov_z = chol(eye(setup.nvar*setup.nvar),'lower');
+    slice.mean       = zeros(info.nvar*info.nvar,1);
+    slice.chol_cov_z = chol(eye(info.nvar*info.nvar),'lower');
     slice.chol_cov_z = 1;
-    slice.fcn_lik    = @(z_prop) loglike_Q(z_prop,function_restrictions_i,gs_qr,Bdraw,Sigmadraw,setup);
-    slice.nobs       = setup.nvar*setup.nvar;
+    slice.fcn_lik    = @(z_prop) loglike_Q(z_prop,function_restrictions_i,gs_qr,fo_inv,fo_str2irfs,Bold,Sigold,info);
+    slice.nobs       = info.nvar*info.nvar;
     
     % --- actual slice sampling
     % z_old = randn(info.nvar*info.nvar,1);
     lik_old = slice.fcn_lik(z_old_X);
     [z_old_X, ~, n_try] = slice_sampling_v02(slice, z_old_X, lik_old);
-    [Qdraw,Rdraw] =  gs_qr(reshape(z_old_X,setup.nvar,setup.nvar));
+    [Qdraw,Rdraw] =  gs_qr(reshape(z_old_X,info.nvar,info.nvar));
     
     %% Draw sigma^2=(sigma_1^2,\dots,\sigma_n^2)
     % draw equation by equation
     %
-    for ii=1:setup.nvar
+    for ii=1:nvar
         slice.scale_z    = 1;
         slice.mean       = vec(posterior_redu.Rmean{ii});
         
@@ -208,13 +195,13 @@ while record<=setup.M0
         chol_lower_Rvariance_common = chol(posterior_redu.Rvariance{ii}, 'lower');
         slice.chol_cov_z_common = chol_lower_Rvariance_common;slice.nobs1 = 1;
         slice.nobs2 = nnuTilde_i;
-        slice.fcn_lik    = @(z_prop) loglike_sigma2i_mc_BSig_v02(z_prop,function_restrictions_i,ttheta_old,ssigma_old,Qdraw,info,nnuTilde_i,ii,Bold,Sigold,Aold,Bstrold);
+        slice.fcn_lik    = @(z_prop) loglike_sigma2i_mc_BSig_v02(z_prop,function_restrictions_i,fo_inv,fo_str2irfs,ttheta_old,ssigma_old,Qdraw,info,nnuTilde_i,ii,Bold,Sigold,Aold,Bstrold);
         slice.nobs       = slice.nobs1*slice.nobs2;
         
         % --- actual slice sampling        
         lik_old = slice.fcn_lik(z_old_R{ii});
         
-        [z_old_R_i, ~, n_try, Bdraw, Sigmadraw, Aold,Bstrold] = slice_sampling_v02_Sigma_BSig(slice, z_old_R{ii}, lik_old);
+        [z_old_R_i, ~, n_try, Bold, Sigold, Aold,Bstrold] = slice_sampling_v02_Sigma_BSig(slice, z_old_R{ii}, lik_old);
         z_old_R{ii} = z_old_R_i;
         
         ssigma_old(ii,1)=1/(z_old_R_i'*z_old_R_i);
@@ -224,7 +211,7 @@ while record<=setup.M0
     % %% Draw B
     % % Draw \theta
     % % draw equation by equation
-    for ii=1:setup.nvar
+    for ii=1:nvar
         cholLSigmadraw =  chol(ssigma_old(ii,1));
 
         slice.scale_z    = 1;
@@ -235,7 +222,7 @@ while record<=setup.M0
         slice.nobs1 = 1;
         slice.nobs2 = posterior_redu.ki{ii};
         
-        slice.fcn_lik    = @(z_prop) loglike_tthetai_BSig(z_prop,function_restrictions_i,ttheta_old,ssigma_old,Qdraw,info,ki,ii,Bold,Sigold,Aold,Bstrold);
+        slice.fcn_lik    = @(z_prop) loglike_tthetai_BSig(z_prop,function_restrictions_i,fo_inv,fo_str2irfs,ttheta_old,ssigma_old,Qdraw,info,ki,ii,Bold,Sigold,Aold,Bstrold);
         
         slice.nobs       = slice.nobs1*slice.nobs2;
         
@@ -244,16 +231,19 @@ while record<=setup.M0
         lik_old = slice.fcn_lik(ttheta_old{ii});
         
         %[z_old_B, ~, n_try] = slice_sampling_v02(slice, z_old_B, lik_old);
-        [ttheta_old_i, ~, n_try,Bdraw,Sigmadraw,Aold,Bstrold] = slice_sampling_v02_kron_BSig(slice, ttheta_old{ii}, lik_old);
+        [ttheta_old_i, ~, n_try,Bold,Sigold,Aold,Bstrold] = slice_sampling_v02_kron_BSig(slice, ttheta_old{ii}, lik_old);
         
         ttheta_old{ii} = ttheta_old_i;
         
     end
     
-
+    % [Bdraw,Sigmadraw] = tthetassigma2TOBSigma(ttheta_old,ssigma_old,info);
 
     %% check if sign restrictions hold
-
+    
+    %   L0 =reshape(irfpara(1:nvar*nvar,:),nvar,nvar);
+    
+    %    BSigmaQnew = [vec(Bdraw);vec(Sigmadraw);vec(Qdraw)];
 
     count=count+1;    
     if rem(record, save_every) == 0
@@ -284,6 +274,7 @@ disp(telapsed)
 
 %% store draws
 L    = zeros(horizon+1,nvar,info.nshocks,ind_save);
+%cumL    = zeros(horizon+1,nvar,1:,ind_save);
 
 
 for s=1:ind_save
@@ -309,6 +300,10 @@ for s=1:ind_save
     
     for h=0:horizon
         L(h+1,:,1:info.nshocks,s) =  LIRF(1+h*nvar:(h+1)*nvar,1:info.nshocks);
+        
+        % for i=1:nvar
+        %     cumL(h+1,1:4,i,s)   = sum(L(1:h+1,1:4,i,s),1);
+        % end
         
     end
     

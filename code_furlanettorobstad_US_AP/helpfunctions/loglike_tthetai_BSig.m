@@ -1,4 +1,4 @@
-function [loglik_prop,Bdraw,Sigmadraw,Adraw,Bstrdraw] = loglike_tthetai_BSig(z_prop,function_restrictions,fo_inv,fo_str2irfs,ttheta_old,sigma2draw,Qdraw,info,ki,ii,Bold,Sigold,Aold,Bstrold)
+function [loglik_prop,Bdraw,Sigmadraw,Adraw,Bstrdraw] = loglike_tthetai_BSig(z_prop,function_restrictions,ttheta_old,sigma2draw,Qdraw,info,ki,ii,Bold,Sigold,Aold,Bstrold)
 % likelihood eval y given z_prop
 % z_prop = [ddelta, ggamma]
 
@@ -12,7 +12,7 @@ ttheta_old{ii}=z_prop;
 
 [Bdraw,Sigmadraw,Adraw,Bstrdraw] = tthetassigma2TOBSigma_BSig(ttheta_old,sigma2draw,info,ii,Bold,Sigold,Aold,Bstrold);
 
-S_prop = function_restrictions(Bdraw, Sigmadraw, Qdraw,fo_inv,fo_str2irfs,info);
+S_prop = function_restrictions(Bdraw, Sigmadraw, Qdraw,info);
 
 
 

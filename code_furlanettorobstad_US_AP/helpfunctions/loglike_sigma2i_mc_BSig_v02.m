@@ -1,4 +1,4 @@
-function [loglik_prop,Bdraw,Sigmadraw,Adraw,Bstrdraw] = loglike_sigma2i_mc_BSig_v02(z_prop,function_restrictions,fo_inv,fo_str2irfs,ttheta_old,sigma2draw,Qdraw,info,nnuTilde,ii, Bold, Sigold, Aold,Bstrold)
+function [loglik_prop,Bdraw,Sigmadraw,Adraw,Bstrdraw] = loglike_sigma2i_mc_BSig_v02(z_prop,function_restrictions,ttheta_old,sigma2draw,Qdraw,info,nnuTilde,ii, Bold, Sigold, Aold,Bstrold)
 % likelihood eval y given z_prop
 % z_prop = [ddelta, ggamma]
 
@@ -12,7 +12,7 @@ sigma2draw(ii,1)=1/(z_prop'*z_prop);
 
 if min(eig(Sigmadraw))>1e-8
     
-    S_prop = function_restrictions(Bdraw, Sigmadraw, Qdraw,fo_inv,fo_str2irfs,info);
+    S_prop = function_restrictions(Bdraw, Sigmadraw, Qdraw,info);
     
     loglik_prop = -Inf;
     if S_prop==1

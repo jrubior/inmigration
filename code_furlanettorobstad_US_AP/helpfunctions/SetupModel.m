@@ -14,7 +14,7 @@ setup.save_every   = 10;                   % thinning, we save every other "save
 setup.nsave        = setup.M0/setup.save_every;       % we store nsave elements
 setup.elliptical_Q = 1;                    % set to  0 to use Chan, Matthes, Yu instead of ESS for Q.
 setup.seed         = 0;                    % reproduce seed from housekeeping. Useful for exact replication across different OS
-setup.nshocks      = 8;                   % number of shocks to identify, up to 10. To add more than 10 see identification section
+setup.nshocks      = 4;                   % number of shocks to identify, up to 10. To add more than 10 see identification section
 setup.load_existing_init = 1;             % load existing initial values
 % endogenous settings
 setup.nvar   = size(num,2);                       % number of endogenous variables
@@ -31,14 +31,14 @@ setup.h      = @(x)chol(x);                     % upper triangular Cholesky fact
 % L_0(i,j) is the response of variable i to shock j
 % L_0(i,j) S_{i,j} L_0 e_j 
 %==========================================================================
-setup.S = cell([setup.nvar,1]);
+setup.Ss = cell([setup.nvar,1]);
 for ii=1:setup.nvar
-    setup.S{ii}=zeros(0,setup.nvar*setup.NS);
+    setup.Ss{ii}=zeros(0,setup.nvar*setup.NS);
 end
 
 
 switch setup.label_R
-    case 'cmy'
+    case 'baseline'
         baseline_identification;
 end
 
