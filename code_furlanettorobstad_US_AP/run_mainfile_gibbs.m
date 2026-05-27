@@ -153,9 +153,9 @@ end
 Bdraw   = init.Bdraw;
 Sigmadraw   = init.Sigmadraw;
 % convert to (\theta,sig^2)
-[ttheta,ssigma2] = BSigmaTOtthetassigma2(init.Bdraw,init.Sigmadraw);
+[ttheta_old,ssigma2_old] = BSigmaTOtthetassigma2(init.Bdraw,init.Sigmadraw);
 Qdraw = init.Qdraw;
-% [Bdraw_check,Sigmadraw_check]=tthetassigma2TOBSigma(ttheta,ssigma2,setup);
+% [Bdraw_check,Sigmadraw_check]=tthetassigma2TOBSigma(ttheta_old,ssigma2_old,setup);
 % % check inverse
 % error_B = max(max(abs(Bdraw_check-init.Bdraw)));
 % error_Sigmadraw = max(max(abs(Sigmadraw_check-init.Sigmadraw)));
@@ -163,7 +163,7 @@ Qdraw = init.Qdraw;
 
 z_old_X   = init.z_old_X;
 
-R_base = chol(diag(ssigma2)\eye(setup.nvar), 'lower');
+R_base = chol(diag(ssigma2_old)\eye(setup.nvar), 'lower');
 R_old = [R_base, zeros(setup.nvar, T - setup.nvar)];
 z_old_R=cell([setup.nvar,1]);
 for i=1:setup.nvar
@@ -172,6 +172,16 @@ for i=1:setup.nvar
 end
 
 z_old_B =init.z_old_B;
+
+
+%% posterior parameters needed for elliptical slice sampling
+posterior_redu.Rmean    =  cell([setup.nvar,1]);
+posterior_redu.Rvariance = cell([setup.nvar,1]);
+for ii=1:setup.nvar
+    ki = setup.nvar*setup.nlag+ii;
+    posterior_redu.Rmean{ii} = zeros(1,2*posterior_redu.nnu{ii});
+    
+end
 
 
 
@@ -188,7 +198,7 @@ while record<=setup.M0
     slice.chol_cov_z = 1;
     slice.fcn_lik    = @(z_prop) loglike_Q(z_prop,function_restrictions_i,gs_qr,Bdraw,Sigmadraw,setup);
     slice.nobs       = setup.nvar*setup.nvar;
-    
+ 
     % --- actual slice sampling
     % z_old = randn(info.nvar*info.nvar,1);
     lik_old = slice.fcn_lik(z_old_X);
@@ -197,15 +207,15 @@ while record<=setup.M0
     
     %% Draw sigma^2=(sigma_1^2,\dots,\sigma_n^2)
     % draw equation by equation
-    %
     for ii=1:setup.nvar
         slice.scale_z    = 1;
         slice.mean       = vec(posterior_redu.Rmean{ii});
         
         nnuTilde_i = 2*posterior_redu.nnu{ii};
-        Stilde_ii =posterior_redu.Si_tilde{ii} + 0.5*(ttheta_old{ii}-posterior_redu.thetai_tilde{ii})'*posterior_redu.Kthetai{ii}*(ttheta_old{ii}-posterior_redu.thetai_tilde{ii});
-        posterior_redu.Rvariance{ii} = 1/(2*Stilde_ii);% depends on theta
+        Stilde_ii =posterior_redu.Si_tilde{ii}; %+ 0.5*(ttheta_old{ii}-posterior_redu.thetai_tilde{ii})'*posterior_redu.Kthetai{ii}*(ttheta_old{ii}-posterior_redu.thetai_tilde{ii});
+        posterior_redu.Rvariance{ii} = 1/(2*Stilde_ii);
         chol_lower_Rvariance_common = chol(posterior_redu.Rvariance{ii}, 'lower');
+       
         slice.chol_cov_z_common = chol_lower_Rvariance_common;slice.nobs1 = 1;
         slice.nobs2 = nnuTilde_i;
         slice.fcn_lik    = @(z_prop) loglike_sigma2i_mc_BSig_v02(z_prop,function_restrictions_i,ttheta_old,ssigma_old,Qdraw,info,nnuTilde_i,ii,Bold,Sigold,Aold,Bstrold);
@@ -216,7 +226,7 @@ while record<=setup.M0
         
         [z_old_R_i, ~, n_try, Bdraw, Sigmadraw, Aold,Bstrold] = slice_sampling_v02_Sigma_BSig(slice, z_old_R{ii}, lik_old);
         z_old_R{ii} = z_old_R_i;
-        
+        keyboard
         ssigma_old(ii,1)=1/(z_old_R_i'*z_old_R_i);
 
     end

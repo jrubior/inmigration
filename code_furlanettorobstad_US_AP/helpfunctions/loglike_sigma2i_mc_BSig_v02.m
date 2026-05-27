@@ -17,7 +17,11 @@ if min(eig(Sigmadraw))>1e-8
     loglik_prop = -Inf;
     if S_prop==1
         
-        loglik_prop = 0;
+
+        loglik_prop = -0.5*LogAbsDet(sigma2draw(ii,1)*posterior_redu.Kthetai{ii}\eye(posterior_redu.ki{ii}))-0.5*(ttheta_old{ii}-posterior_redu.thetai_tilde{ii})'*(posterior_redu.Kthetai{ii}/sigma2draw(ii,1))*(ttheta_old{ii}-posterior_redu.thetai_tilde{ii});
+
+
+        %loglik_prop = 0;
     end
     
 else
